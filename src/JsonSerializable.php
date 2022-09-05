@@ -4,9 +4,6 @@ namespace JsonSerializablePhp;
 
 abstract class JsonSerializable implements \JsonSerializable
 {
-    /**
-     * @throws \ReflectionException
-     */
     public function jsonSerialize(): array
     {
         // Use reflection to get fields and attributes
@@ -19,9 +16,14 @@ abstract class JsonSerializable implements \JsonSerializable
             $value = $prop->getValue($this);
             // only read first attribute
             if (isset($attributes[0])) {
-                $instance = $attributes[0]->newInstance();
-                $class = new \ReflectionClass($instance);
-                $arguments = $this->propsAsArray($class->getProperties(), $instance);
+                $arguments = \array_merge(
+                    [
+                        'fieldName' => null,
+                        'includeIfNull' => true,
+                        'ignore' => false,
+                    ],
+                    $attributes[0]->getArguments(),
+                );
                 \assert(isset($arguments['fieldName']));
                 \assert(isset($arguments['includeIfNull']));
                 \assert(isset($arguments['ignore']));
@@ -38,19 +40,5 @@ abstract class JsonSerializable implements \JsonSerializable
         }
 
         return $serializedArray;
-    }
-
-    /**
-     * @param \ReflectionProperty[] $properties
-     * @return array<string, mixed>
-     */
-    private function propsAsArray(array $properties, mixed $instance): array {
-        $arr =  [];
-        foreach ($properties as $prop) {
-            $prop->setAccessible(true);
-            $arr[$prop->getName()] = $prop->getValue($instance);
-        }
-
-        return $arr;
     }
 }
